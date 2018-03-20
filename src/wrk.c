@@ -11,6 +11,7 @@ static struct config {
     uint64_t timeout;
     uint64_t pipeline;
     bool     delay;
+    bool     raw;
     bool     dynamic;
     bool     latency;
     char    *host;
@@ -44,6 +45,7 @@ static void handler(int sig) {
 static void usage() {
     printf("Usage: wrk <options> <url>                            \n"
            "  Options:                                            \n"
+           "    -a, --all>             Record raw value           \n"
            "    -c, --connections <N>  Connections to keep open   \n"
            "    -d, --duration    <T>  Duration of test           \n"
            "    -t, --threads     <N>  Number of threads to use   \n"
@@ -334,6 +336,10 @@ static int response_complete(http_parser *parser) {
         thread->errors.status++;
     }
 
+    if (cfg.raw) {
+        printf("===LATENCY=== %" PRId64 "\n", now - c->start);
+    }
+
     if (c->headers.buffer) {
         *c->headers.cursor++ = '\0';
         script_response(thread->L, status, &c->headers, &c->body);
@@ -467,6 +473,7 @@ static char *copy_url_part(char *url, struct http_parser_url *parts, enum http_p
 }
 
 static struct option longopts[] = {
+    { "all",         no_argument,       NULL, 'a' },
     { "connections", required_argument, NULL, 'c' },
     { "duration",    required_argument, NULL, 'd' },
     { "threads",     required_argument, NULL, 't' },
@@ -489,8 +496,11 @@ static int parse_args(struct config *cfg, char **url, struct http_parser_url *pa
     cfg->duration    = 10;
     cfg->timeout     = SOCKET_TIMEOUT_MS;
 
-    while ((c = getopt_long(argc, argv, "t:c:d:s:H:T:Lrv?", longopts, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "t:c:d:s:H:T:Lrva?", longopts, NULL)) != -1) {
         switch (c) {
+            case 'a':
+                cfg->raw = true;
+                break;
             case 't':
                 if (scan_metric(optarg, &cfg->threads)) return -1;
                 break;
