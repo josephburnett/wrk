@@ -337,7 +337,7 @@ static int response_complete(http_parser *parser) {
     }
 
     if (cfg.raw) {
-        printf("===LATENCY=== %" PRId64 "\n", now - c->start);
+        printf("===LATENCY=== %" PRId64 " %" PRId64 "\n", c->start, now - c->start);
     }
 
     if (c->headers.buffer) {
